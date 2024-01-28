@@ -7,6 +7,7 @@
 
 // dependencies
 const http = require("http");
+const url = require("url");
 
 // app object - module scaffolding
 const app = {};
@@ -26,6 +27,12 @@ app.createServer = () => {
 
 // handle request response
 app.handleReqRes = (req, res) => {
+  // request handling
+  // get the url and parse it
+  const parsedUrl = url.parse(req.url, true);
+  const path = parsedUrl.pathname;
+  console.log(parsedUrl);
+
   // response handle
   res.end("Hello programmers");
 };
