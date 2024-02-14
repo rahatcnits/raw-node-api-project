@@ -7,6 +7,7 @@
 
 // dependencies
 const url = require("url");
+const { StringDecoder } = require("string_decoder");
 const routes = require("../routes");
 const {
   notFoundHandler,
@@ -25,6 +26,9 @@ handler.handleReqRes = (req, res) => {
   const queryStringObject = parsedUrl.query;
   const headersObject = req.headers;
 
+  const decoder = new StringDecoder("utf-8");
+  let realData = "";
+
   const requestProperties = {
     parsedUrl,
     path,
@@ -38,18 +42,24 @@ handler.handleReqRes = (req, res) => {
     ? routes[trimmedPath]
     : notFoundHandler;
 
-  chosenHandler(requestProperties, (statusCode, payLoad) => {
-    statusCode = typeof statusCode === "number" ? statusCode : 500;
-    payLoad = typeof payLoad === "object" ? payLoad : {};
-
-    const payLoadString = JSON.stringify(payLoad);
-
-    // return the final response
-    res.writeHead(statusCode);
-    res.end(payLoadString);
+  req.on("data", (buffer) => {
+    realData += decoder.write(buffer);
   });
-  // response handle
-  // res.end("Hello programmers");
+
+  req.on("end", () => {
+    realData += decoder.end();
+
+    chosenHandler(requestProperties, (statusCode, payLoad) => {
+      statusCode = typeof statusCode === "number" ? statusCode : 500;
+      payLoad = typeof payLoad === "object" ? payLoad : {};
+
+      const payLoadString = JSON.stringify(payLoad);
+
+      // return the final response
+      res.writeHead(statusCode);
+      res.end(payLoadString);
+    });
+  });
 };
 
 module.exports = handler;
